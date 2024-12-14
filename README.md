@@ -1,110 +1,89 @@
+# Legal Q&A Dataset Generator
 
-# Question Extractor for Legal Documentation
+A powerful tool designed to automatically generate high-quality question-answer pairs from legal documentation, specifically optimized for training and fine-tuning Large Language Models (LLMs) in the legal domain.
 
-This project is designed to automate the extraction of question-and-answer (Q&A) pairs from a set of markdown (`.md`) legal documents. These Q&A pairs are then used to train legal-focused large language models (LLMs), enabling them to perform better in the legal domain by enhancing their understanding of complex legal concepts, terminology, and procedural rules.
+## Overview
 
-## Table of Contents
+This project automates the extraction of question-answer pairs from legal documentation in markdown format. It uses advanced language models to:
+1. Extract relevant questions from legal text
+2. Generate comprehensive, legally-sound answers
+3. Format the data for various LLM fine-tuning platforms (OpenAI, Azure OpenAI, PaLM 2, Anyscale)
 
-- [Introduction](#introduction)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Inner Workings](#inner-workings)
-- [Applications](#applications)
-- [Troubleshooting](#troubleshooting)
+## Features
 
----
-
-## Introduction
-
-The goal of this project is to streamline the process of preparing legal data for training large language models (LLMs). By feeding legal documents into this script, you can generate high-quality question-and-answer pairs automatically. These pairs can then be used to fine-tune or improve legal AI models, making them more adept at understanding the intricacies of legal documentation.
-
-The application is designed with a focus on handling large volumes of text in markdown format. It ensures that the questions extracted from the documents are relevant, comprehensive, and suitable for training an LLM in the legal domain. This tool is especially helpful for legal professionals, researchers, and AI engineers working on AI solutions for law firms, legal research, or automated legal assistance systems.
-
----
+- **Smart Text Processing**: Automatically splits large documents into processable chunks while maintaining context
+- **Token-Aware Processing**: Built-in token counting and management for optimal model interaction
+- **Concurrent Processing**: Asynchronous processing of files for improved performance
+- **Multiple Output Formats**: Supports various fine-tuning formats including OpenAI, Azure OpenAI, PaLM 2, and Anyscale
+- **Progress Tracking**: Real-time progress monitoring for large document processing
+- **Caching**: Intermediate results are cached to prevent redundant processing
 
 ## Installation
 
-Before using the tool, you'll need to install the necessary Python packages:
+1. Clone the repository:
+```bash
+git clone [repository-url]
+cd law-llm
+```
 
-1. **tiktoken** - The OpenAI tokenizer used to count tokens and ensure token limits are respected.
-   ```bash
-   pip install tiktoken
-   ```
-
-2. **openai** - The official OpenAI API client used to interact with OpenAI's models.
-   ```bash
-   pip install openai
-   ```
-
-3. **langchain** - A framework that helps manage, combine, and use LLMs and other utilities seamlessly.
-   ```bash
-   pip install langchain
-   ```
-
-4. **Pathlib** - For efficient file handling and directory management (included in Python 3 by default).
-
----
+2. Install required packages:
+```bash
+pip install tiktoken openai langchain aiolimiter tenacity
+```
 
 ## Usage
 
-### Step 1: Set Up API Key
-Ensure you have your [OpenAI API key](https://platform.openai.com/account/api-keys) ready. Place the key in your environment variables, or set it directly within the codebase under `question_extractor/__init__.py`.
+1. Place your legal markdown documents in the input directory
+2. Configure the paths in `question_extractor.py`:
+```python
+input_directory = Path('path/to/your/markdown/files')
+output_filepath = Path('path/to/output/questions.json')
+```
 
+3. Run the extraction:
 ```bash
-export OPENAI_API_KEY="your-api-key"
+python question_extractor.py
 ```
 
-### Step 2: Configure File Paths
-Set the relevant file paths in the `question_extractor.py` file (both the input folder and the output path).
-
-### Step 3: Run the Script
-To run the code, execute the following command:
-
+4. Convert the output to your desired fine-tuning format:
 ```bash
-python3 question_extractor.py
+python fine_tune_prep.py
 ```
 
-Once it is done, all questions and answers will be written as a `.json` file in the output path.
+## Configuration
 
----
+- **Maximum Q&A Pairs**: Default limit of 300 pairs per file (configurable in `process_file()`)
+- **Token Limits**: Configured for models with 128,000 token limit
+- **Rate Limiting**: Default concurrent request limit of 75% of the model's rate limit
 
-## Inner Workings
+## Output Format
 
-The code loops through all files in the specified input directory. For each file, it extracts a list of questions using the following prompt followed by a chunk of text:
-
+The generated dataset follows this structure:
+```json
+[
+  {
+    "source": "file_path",
+    "question": "What is the legal requirement for...",
+    "answer": "According to the legal documentation..."
+  }
+]
 ```
-You are an expert user extracting information to quiz people on documentation. You will be passed a page extracted from the documentation, write a numbered list of questions that can be answered based *solely* on the given text.
-```
 
-It then loops through the questions, producing an answer by passing the following prompt, along with a chunk of text and a question:
+## Fine-tuning Formats
 
-```
-You are an expert user answering questions. You will be passed a page extracted from a documentation and a question. Generate a comprehensive and informative answer to the question based *solely* on the given text.
-```
+Supports multiple output formats:
+- **OpenAI/Anyscale**: ChatML format with system, user, and assistant messages
+- **Azure OpenAI**: Simple prompt-completion pairs
+- **PaLM 2**: Input-output text pairs
 
-Most of the actual logic of the code is dedicated to processing the files concurrently (for speed) and ensuring that text chunks passed to the model are small enough to leave enough tokens for answering. If a text is too long to be sent to the model, it is split along its highest markdown heading level, and this process can be repeated recursively until we get down to single paragraphs.
+## Performance
 
----
+- Average question size: 15.28 tokens
+- Average answer size: 94.78 tokens
+- Question-to-text ratio: 14% (questions generated relative to input text size)
 
-## Applications
+## Contributing
 
-This tool is invaluable for legal professionals and AI researchers looking to create sophisticated AI models for the legal field. By training LLMs with high-quality Q&A pairs, the models can learn to interpret legal language, improve their understanding of legal processes, and provide more accurate responses to queries related to legal documentation.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-Potential applications include:
 
-- **Legal Research**: Facilitating faster and more efficient legal research by providing models that understand legal texts.
-- **Automated Legal Assistance**: Enabling AI systems to provide legal advice or assistance in a more reliable manner.
-- **Training and Education**: Helping law students and professionals learn about legal concepts and terminology through interactive Q&A.
-
----
-
-## Troubleshooting
-
-If you encounter any issues while running the script, consider the following steps:
-
-1. **Check API Key**: Ensure that your OpenAI API key is correctly set in your environment.
-2. **File Permissions**: Make sure you have the necessary permissions to read from the input directory and write to the output path.
-3. **Python Environment**: Verify that you have all the required packages installed and that you are using a compatible version of Python.
-4. **Input Directory**: Confirm that the specified input directory contains valid markdown files for processing.
-
-For any additional help or suggestions, please feel free to open an issue on the project's GitHub repository.
